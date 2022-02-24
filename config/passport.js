@@ -10,11 +10,11 @@ const JWTStrategy = passportJWT.Strategy
 const ExtractJWT = passportJWT.ExtractJwt
 
 passport.use(new LocalStrategy({
-    usernameField: 'email',
+    usernameField: 'account',
     passwordField: 'password',
     passReqToCallback: true
   },
-  (req, email, password, cb) => {
+  (req, account, password, cb) => {
     User.findOne({
         where: {
           account
@@ -29,6 +29,7 @@ passport.use(new LocalStrategy({
       })
   }
 ))
+
 const jwtOptions = {
   jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
   secretOrKey: process.env.JWT_SECRET
@@ -36,22 +37,19 @@ const jwtOptions = {
 
 passport.use(new JWTStrategy(jwtOptions, (jwtPayload, cb) => {
   User.findByPk(jwtPayload.id, {
-
-
+      include: [{
+          model: User,
+          as: 'Followers'
+        },
+        {
+          model: User,
+          as: 'Followings'
+        }
+      ]
     })
     .then(user => cb(null, user))
     .catch(err => cb(err))
 }))
 
 
-passport.serializeUser((user, cb) => {
-  cb(null, user.id)
-})
-passport.deserializeUser((id, cb) => {
-  return User.findByPk(id, {
-
-    })
-    .then(user => cb(null, user.toJSON()))
-    .catch(err => cb(err))
-})
 module.exports = passport
