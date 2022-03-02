@@ -3,9 +3,13 @@ const helpers = require('../_helpers')
 
 module.exports = {
   authenticated: (req, res, next) => {
+<<<<<<< HEAD
     passport.authenticate('jwt', {
       session: false
     }, (err, user) => {
+=======
+    passport.authenticate('jwt', { session: false }, (err, user) => {
+>>>>>>> master
       if (err || !user) {
         return res
           .status(401)
@@ -30,4 +34,8 @@ module.exports = {
         message: 'permission denied'
       })
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> master
