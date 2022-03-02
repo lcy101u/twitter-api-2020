@@ -64,11 +64,10 @@ const userController = {
       .catch(err => next(err))
   },
   putUser: (req, res, next) => {
-    const getUserId = Number(req.params.id)
+    const userId = Number(req.params.id)
     const { name, introduction, avatar, cover } = req.body
-    if (!name) throw new Error('name is required!')
-    // if (helpers.getUser(req).id !== getUserId) throw new Error('帳號驗證不通過')
-    return User.findByPk(getUserId)
+    if (!name) throw new Error('名字為必填！')
+    return User.findByPk(userId)
       .then(user => {
         if (!user) throw new Error('帳號不存在！')
         return user.update({ name, introduction, avatar, cover })
@@ -78,25 +77,66 @@ const userController = {
   },
   getUserTweets: (req, res, next) => {
     const userId = Number(req.params.id)
-    return Tweet.findAll({ where: { userId: userId } })
-      .then(userTweets => {
-        if (!userTweets) throw new Error('使用者並未發佈任何推文!')
-        return res.status(200).json(userTweets)
+    return Promise.all([
+      User.findByPk(userId),
+      Tweet.findAll({
+        where: { userId: userId },
+        include: [{
+          model: Tweet,
+          attributes: ['id', 'description', 'createdAt', 'replyCount', 'likeCount'],
+          include: [{
+            model: User,
+            attributes: ['id', 'name', 'account', 'avatar']
+          }]
+        }],
+        order: [['createdAt', 'DESC']]
       })
+    ])
+      .then(([user, tweets]) => {
+        if (!user) throw new Error('帳號不存在！')
+        if (!tweets) throw new Error('使用者沒有任何推文!')
+        return res.status(200).json(tweets)
+      })
+
       .catch(err => next(err))
   },
   getRepliedTweets: (req, res, next) => {
     const userId = Number(req.params.id)
-    return Reply.findAll({ where: { userId: userId } })
-      .then(userReplies => {
-        if (!userReplies) throw new Error('使用者並未回覆任何推文!')
-        return res.status(200).json(userReplies)
+    return Promise.all([
+      User.findByPk(userId),
+      Reply.findAll({
+        where: { UserId: userId },
+        attributes: ['id', 'comment', 'createdAt', 'tweetId'],
+        include: [{
+          model: Tweet,
+          attributes: ['id', 'description', 'createdAt', 'replyCount', 'likeCount'],
+          include: [{ model: User, attributes: ['id', 'name', 'account', 'avatar'] }
+          ]
+        }]
+      })
+    ])
+      .then(([user, replies]) => {
+        if (!user) { throw new Error('帳號不存在!') }
+        if (!replies) throw new Error('使用者沒有回覆任何推文!')
+        return res.status(200).json(replies)
       })
       .catch(err => next(err))
   },
   getLikes: (req, res, next) => {
     const userId = Number(req.params.id)
-    return Like.findAll({ where: { userId: userId } })
+    return Like.findAll({
+      where: { userId: userId },
+      attributes: ['id', 'createdAt', 'TweetId'],
+      order: [['createdAt', 'DESC']],
+      include: [{
+        model: Tweet,
+        attributes: ['id', 'description', 'createdAt', 'replyCount', 'likeCount'],
+        include: [{
+          model: User,
+          attributes: ['id', 'name', 'account', 'avatar']
+        }]
+      }]
+    })
       .then(userLikes => {
         if (!userLikes) throw new Error('使用者並未喜歡任何推文!')
         return res.status(200).json(userLikes)
