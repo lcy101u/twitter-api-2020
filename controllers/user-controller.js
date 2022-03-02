@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { User } = require('../models')
+const { User, Tweet } = require('../models')
 const helpers = require('../_helpers')
 const sequelize = require('sequelize')
 
@@ -74,6 +74,15 @@ const userController = {
         return user.update({ name, introduction, avatar, cover })
       })
       .then(updatedUser => res.status(200).json({ user: updatedUser }))
+      .catch(err => next(err))
+  },
+  getUserTweets: (req, res, next) => {
+    const userId = Number(req.params.id)
+    return Tweet.findAll({ where: { userId: userId } })
+      .then(userTweets => {
+        if (!userTweets) throw new Error('使用者並未發佈任何推文!')
+        return res.status(200).json(userTweets)
+      })
       .catch(err => next(err))
   }
 }
