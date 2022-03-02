@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { User, Tweet } = require('../models')
+const { User, Tweet, Reply, Like, Followship } = require('../models')
 const helpers = require('../_helpers')
 const sequelize = require('sequelize')
 
@@ -82,6 +82,50 @@ const userController = {
       .then(userTweets => {
         if (!userTweets) throw new Error('使用者並未發佈任何推文!')
         return res.status(200).json(userTweets)
+      })
+      .catch(err => next(err))
+  },
+  getRepliedTweets: (req, res, next) => {
+    const userId = Number(req.params.id)
+    return Reply.findAll({ where: { userId: userId } })
+      .then(userReplies => {
+        if (!userReplies) throw new Error('使用者並未回覆任何推文!')
+        return res.status(200).json(userReplies)
+      })
+      .catch(err => next(err))
+  },
+  getLikes: (req, res, next) => {
+    const userId = Number(req.params.id)
+    return Like.findAll({ where: { userId: userId } })
+      .then(userLikes => {
+        if (!userLikes) throw new Error('使用者並未喜歡任何推文!')
+        return res.status(200).json(userLikes)
+      })
+      .catch(err => next(err))
+  },
+  getUserFollowings: (req, res, next) => {
+    const userId = Number(req.params.id)
+    return Followship.findAll({
+      where: {
+        followerId: userId
+      }
+    })
+      .then(userFollowings => {
+        if (!userFollowings) throw new Error('使用者並未追蹤任何人!')
+        return res.status(200).json(userFollowings)
+      })
+      .catch(err => next(err))
+  },
+  getUserFollowers: (req, res, next) => {
+    const userId = Number(req.params.id)
+    return Followship.findAll({
+      where: {
+        followingId: userId
+      }
+    })
+      .then(userFollowers => {
+        if (!userFollowers) throw new Error('使用者並未被任何人追蹤!')
+        return res.status(200).json(userFollowers)
       })
       .catch(err => next(err))
   }
