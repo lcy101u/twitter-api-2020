@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken')
 const { User, Tweet, Reply, Like, Followship } = require('../models')
 const helpers = require('../_helpers')
 const sequelize = require('sequelize')
+const like = require('../models/like')
 
 const userController = {
 
@@ -90,7 +91,7 @@ const userController = {
     ])
       .then(([user, tweets]) => {
         if (!user) throw new Error('帳號不存在！')
-        if (!tweets) throw new Error('使用者沒有任何推文!')
+        if (!tweets || []) throw new Error('使用者沒有任何推文!')
         return res.status(200).json(tweets)
       })
 
@@ -113,28 +114,33 @@ const userController = {
     ])
       .then(([user, replies]) => {
         if (!user) { throw new Error('帳號不存在!') }
-        if (!replies) throw new Error('使用者沒有回覆任何推文!')
+        if (!replies || []) throw new Error('使用者沒有回覆任何推文!')
         return res.status(200).json(replies)
       })
       .catch(err => next(err))
   },
   getLikes: (req, res, next) => {
     const userId = Number(req.params.id)
-    return Like.findAll({
-      where: { userId: userId },
-      attributes: ['id', 'createdAt', 'TweetId'],
-      order: [['createdAt', 'DESC']],
-      include: [{
-        model: Tweet,
-        attributes: ['id', 'description', 'createdAt', 'replyCount', 'likeCount'],
+    return Promise.all([
+      User.findByPk(userId),
+      Like.findAll({
+        where: { UserId: userId },
+        attributes: ['id', 'createdAt', 'TweetId'],
+        order: [['createdAt', 'DESC']],
         include: [{
-          model: User,
-          attributes: ['id', 'name', 'account', 'avatar']
+          model: Tweet,
+          attributes: ['id', 'description', 'createdAt', 'replyCount', 'likeCount'],
+          include: [{
+            model: User,
+            attributes: ['id', 'name', 'account', 'avatar']
+          }]
         }]
-      }]
-    })
-      .then(userLikes => {
-        if (!userLikes) throw new Error('使用者並未喜歡任何推文!')
+      })
+    ])
+      .then(([user, likes]) => {
+        if (!user) throw new Error('帳號不存在!')
+        if (!likes || []) throw new Error('使用者並未喜歡任何推文!')
+        const userLikes = likes.map(like => ({ ...like.toJSON(), isLiked: true }))
         return res.status(200).json(userLikes)
       })
       .catch(err => next(err))
