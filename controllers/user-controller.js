@@ -58,7 +58,6 @@ const userController = {
     User.findByPk(userId)
       .then(user => {
         if (!user) throw new Error('帳號不存在')
-        // if (user.role === 'admin') throw new Error('帳號不存在！')
         return res.status(200).json(user)
       })
       .catch(err => next(err))
@@ -142,10 +141,13 @@ const userController = {
   },
   getUserFollowings: (req, res, next) => {
     const userId = Number(req.params.id)
-    return Followship.findAll({
-      where: {
-        followerId: userId
-      }
+    return User.findByPk(userId, {
+      include: [{
+        model: User,
+        as: 'Followings',
+        include: 'Followship'
+      }],
+      attributes: ['name', 'account', 'avatar', 'introduction', 'createdAt']
     })
       .then(userFollowings => {
         if (!userFollowings) throw new Error('使用者並未追蹤任何人!')
