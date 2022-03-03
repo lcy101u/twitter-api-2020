@@ -81,13 +81,10 @@ const userController = {
       User.findByPk(userId),
       Tweet.findAll({
         where: { userId: userId },
+        attributes: ['id', 'description', 'createdAt', 'replyCount', 'likeCount'],
         include: [{
-          model: Tweet,
-          attributes: ['id', 'description', 'createdAt', 'replyCount', 'likeCount'],
-          include: [{
-            model: User,
-            attributes: ['id', 'name', 'account', 'avatar']
-          }]
+          model: User,
+          attributes: ['id', 'name', 'account', 'avatar']
         }],
         order: [['createdAt', 'DESC']]
       })
